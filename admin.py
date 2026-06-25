@@ -397,11 +397,11 @@ async def back(update, context):
 
 
 # ===== ЗАПУСК =====
+# ===== ЗАПУСК =====
 def main():
     app = Application.builder().token(ADMIN_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-
     app.add_handler(CallbackQueryHandler(show_orders, pattern="^all_orders$|^new_orders$"))
     app.add_handler(CallbackQueryHandler(view_order, pattern="^view_"))
     app.add_handler(CallbackQueryHandler(change_status, pattern="^status_"))
@@ -423,7 +423,16 @@ def main():
     app.add_handler(date_conv)
 
     print("👑 Админ-бот запущен!")
-    app.run_polling()
+
+    # ОБХОД ОШИБКИ ДЛЯ RENDER
+    try:
+        app.run_polling()
+    except RuntimeError as e:
+        if "add_signal_handler" in str(e):
+            import asyncio
+            asyncio.run(app.run_polling())
+        else:
+            raise
 
 
 if __name__ == "__main__":

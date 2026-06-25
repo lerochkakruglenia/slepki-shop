@@ -562,11 +562,11 @@ async def back(update, context):
 
 
 # ===== ЗАПУСК =====
+# ===== ЗАПУСК =====
 def main():
     app = Application.builder().token(CLIENT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-
     app.add_handler(CallbackQueryHandler(about, pattern="^about$"))
     app.add_handler(CallbackQueryHandler(reviews, pattern="^reviews$"))
     app.add_handler(CallbackQueryHandler(my_order, pattern="^my_order$"))
@@ -575,31 +575,12 @@ def main():
     order_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(start_order, pattern="^order$")],
         states={
-            PHONE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_phone),
-                CallbackQueryHandler(order_back, pattern="^order_back_phone$")
-            ],
-            PRODUCT: [
-                CallbackQueryHandler(get_product, pattern="^product_"),
-                CallbackQueryHandler(order_back, pattern="^order_back_phone$")
-            ],
-            DESC: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_desc),
-                CallbackQueryHandler(order_back, pattern="^order_back_product$")
-            ],
-            DELIVERY: [
-                CallbackQueryHandler(get_delivery, pattern="^delivery_"),
-                CallbackQueryHandler(order_back, pattern="^order_back_desc$")
-            ],
-            ADDR: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_address),
-                CallbackQueryHandler(order_back, pattern="^order_back_delivery$")
-            ],
-            CONFIRM: [
-                CallbackQueryHandler(order_confirm, pattern="^confirm$"),
-                CallbackQueryHandler(order_back, pattern="^order_back_delivery$"),
-                CallbackQueryHandler(back, pattern="^back$")
-            ],
+            PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_phone)],
+            PRODUCT: [CallbackQueryHandler(get_product, pattern="^product_")],
+            DESC: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_desc)],
+            DELIVERY: [CallbackQueryHandler(get_delivery, pattern="^delivery_")],
+            ADDR: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_address)],
+            CONFIRM: [CallbackQueryHandler(order_confirm, pattern="^confirm$")],
         },
         fallbacks=[CallbackQueryHandler(back, pattern="^back$")],
     )
@@ -616,7 +597,16 @@ def main():
     app.add_handler(review_conv)
 
     print("🤖 Клиентский бот запущен!")
-    app.run_polling()
+
+    # ОБХОД ОШИБКИ ДЛЯ RENDER
+    try:
+        app.run_polling()
+    except RuntimeError as e:
+        if "add_signal_handler" in str(e):
+            import asyncio
+            asyncio.run(app.run_polling())
+        else:
+            raise
 
 
 if __name__ == "__main__":
